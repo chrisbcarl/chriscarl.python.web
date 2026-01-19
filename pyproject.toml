@@ -61,7 +61,7 @@ ignore_missing_imports = true
 
 [tool.poetry]
 repository = "https://github.com/chrisbcarl/chriscarl.python.web"
-package-mode = false
+package-mode = true
 packages = [
     # https://python-poetry.org/docs/pyproject/#packages
     {include = "chriscarl", from = "src"}
