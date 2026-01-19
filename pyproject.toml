@@ -86,6 +86,8 @@ homepage = "https://chriscarl.com"
 # poetry add package
 [tool.poetry.dependencies]
 chriscarl = {develop = true, path="../chriscarl.python"}  # version = ">0.0.0"
+selenium = "^4.40.0"
+flask = "^3.1.2"
 
 
 # poetry add package --group dev
