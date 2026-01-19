@@ -88,8 +88,10 @@ homepage = "https://chriscarl.com"
 chriscarl = {develop = true, path="../chriscarl.python"}  # version = ">0.0.0"
 selenium = "^4.40.0"
 flask = "^3.1.2"
+websocket-client = "^1.9.0"
 
 
-# poetry add package --group dev
-[tool.poetry.group.dev.dependencies]
+[tool.poetry.group.dev.dependencies]  # poetry add package --group dev
 mypy = "^1.13.0"
+pytest = "^9.0.2"
+pytest-cov = "^7.0.0"

@@ -6,6 +6,11 @@ Project that lumps anything web/www/internet--think Flask and Selenium.
 |version    |author     |deployed   |created    |feature-name                           |description        |
 |---        | ---       | ---       | ---       | ---                                   | ---               |
 
+# Maintenance
+```bash
+python -m pytest --cov=chriscarl.core.lib.third.selenium tests --cov-report term-missing
+```
+
 
 # Created Using
 ```bash
