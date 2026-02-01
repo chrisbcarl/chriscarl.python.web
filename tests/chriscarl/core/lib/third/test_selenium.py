@@ -8,6 +8,11 @@ Description:
 
 chriscarl.core.lib.third.selenium unit test.
 
+BUG:
+    PASS           pytest --cov=chriscarl.core.lib.third.selenium tests --cov-report term-missing
+    FAIL python -m pytest --cov=chriscarl.core.lib.third.selenium tests --cov-report term-missing
+        the f*ck?
+
 Updates:
     2026-01-19 - tests.chriscarl.core.lib.third.selenium - initial commit
 '''
@@ -18,6 +23,7 @@ import os
 import sys
 import logging
 import unittest
+import pytest
 
 # third party imports
 from selenium.webdriver.common.by import By
@@ -49,7 +55,7 @@ constants.fix_constants(lib)  # deal with namespace sharding the files across di
 class TestCase(UnitTest):
 
     def setUp(self):
-        self.driver, self.wait = lib.get_driver()
+        self.driver, self.wait = lib.get_driver_wait(timeout=5)
         self.index_html = abspath(constants.MAIN_TESTS_COLLATERAL_DIRPATH, 'index.html')
         return super().setUp()
 
@@ -61,13 +67,19 @@ class TestCase(UnitTest):
     def test_case_0(self):
         self.driver.get('https://example.com')
         anchor = lib.wait_for(self.wait, By.TAG_NAME, 'a')
+        anchor_2 = lib.wait_for_element_or_driver(self.driver, By.TAG_NAME, 'a')
         variables = [
             (lib.web_element_getattr, (anchor, 'href')),
             (lib.web_element_getattr, (anchor, 'plz')),
+            (
+                (lambda x, y: x.text == y.text),
+                (anchor, anchor_2),
+            ),
         ]
         controls = [
             'https://iana.org/domains/example',
             AttributeError,
+            True,
         ]
         self.assert_null_hypothesis(variables, controls)
 
@@ -81,8 +93,8 @@ class TestCase(UnitTest):
 
     def test_case_2(self):
         variables = [
-            (lib.driver_get_status, (self.driver, 'https://example.com')),
-            (lib.driver_get_status, (self.driver, f'file:///{self.index_html}')),
+            (lib.driver_get_status, (self.driver, 'https://example.com'), dict(timeout=3)),
+            (lib.driver_get_status, (self.driver, f'file:///{self.index_html}'), dict(timeout=3)),
         ]
         controls = [
             200,
@@ -91,7 +103,7 @@ class TestCase(UnitTest):
         self.assert_null_hypothesis(variables, controls)
 
     def test_case_3(self):
-        lib.driver_get_status(self.driver, 'https://example.com')
+        lib.driver_get_status(self.driver, 'https://example.com', timeout=3)
         results = [
             lib.find_one_element(self.driver, By.TAG_NAME, 'span'),  # does not exist
             lib.find_one_element(self.driver, By.TAG_NAME, 'p'),  # exist

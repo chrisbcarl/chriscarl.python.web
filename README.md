@@ -8,6 +8,8 @@ Project that lumps anything web/www/internet--think Flask and Selenium.
 
 # Maintenance
 ```bash
+stubgen -o dist/typing/chriscarl --no-analysis ../chriscarl.python/src
+stubgen -o dist/typing -m chriscarl.core.lib.third.selenium --include-docstrings
 python -m pytest --cov=chriscarl.core.lib.third.selenium tests --cov-report term-missing
 ```
 

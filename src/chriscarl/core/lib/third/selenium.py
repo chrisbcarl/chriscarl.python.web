@@ -10,6 +10,7 @@ core.lib.third.selenium is lots of wrappers around selenium that i've found or d
 core.lib are modules that contain code that is about (but does not modify) the library. somewhat referential to core.functor and core.types.
 
 Updates:
+    2026-01-31 - core.lib.third.selenium - added wait_for_element_or_driver and load_cookies
     2026-01-19 - core.lib.third.selenium - initial commit
 '''
 
@@ -20,8 +21,9 @@ import sys
 import logging
 import json
 import time
+import datetime
 import threading
-from typing import Tuple, Optional, Union, Dict
+from typing import Tuple, Optional, Union, Dict, List
 
 # third party imports
 from selenium import webdriver
@@ -34,7 +36,7 @@ from selenium.common.exceptions import NoSuchElementException
 from websocket import WebSocketApp
 
 # project imports
-from chriscarl.core.lib.stdlib.os import abspath
+from chriscarl.core.lib.stdlib.os import abspath, make_dirpath
 from chriscarl.core.lib.stdlib.urllib import get
 
 SCRIPT_RELPATH = 'chriscarl/core/lib/third/selenium.py'
@@ -54,12 +56,14 @@ DEFAULT_CHROME_DEBUG_PORT = 7654
 
 def get_driver(
     url='https://google.com',
-    timeout=20,
     download_directory=DEFAULT_DOWNLOAD_DIRPATH,
     port=DEFAULT_CHROME_DEBUG_PORT,
 ):
-    # type: (str, Union[int, float], str, int) -> Tuple[WebDriver, WebDriverWait]
+    # type: (str, str, int) -> WebDriver
     LOGGER.debug('launching browser')
+    download_directory = abspath(download_directory)
+    make_dirpath(download_directory)
+
     options = webdriver.EdgeOptions()
     # options.add_argument(f"user-data-dir={os.path.expanduser(r'~\AppData\Local\Microsoft\Edge\User Data\Default')}") # edge://version
     # https://stackoverflow.com/questions/6509628/how-to-get-http-response-code-using-selenium-webdriver/50932205#50932205
@@ -72,8 +76,18 @@ def get_driver(
 
     driver = webdriver.ChromiumEdge(options=options)
     driver.get(url)
-    wait = WebDriverWait(driver, timeout=timeout)
+    return driver
 
+
+def get_driver_wait(
+    url='https://google.com',
+    timeout=20,
+    download_directory=DEFAULT_DOWNLOAD_DIRPATH,
+    port=DEFAULT_CHROME_DEBUG_PORT,
+):
+    # type: (str, Union[int, float], str, int) -> Tuple[WebDriver, WebDriverWait]
+    driver = get_driver(url=url, download_directory=download_directory, port=port)
+    wait = WebDriverWait(driver, timeout=timeout)
     return driver, wait
 
 
@@ -143,6 +157,7 @@ def driver_get_status(driver, url_requested, chrome_port=DEFAULT_CHROME_DEBUG_PO
             time.sleep(0.1)
             status = int(glbl_dict['status'])
             if time.time() - start > timeout:
+                LOGGER.debug('timeout %0.2f sec, glbl_dict: %s', timeout, glbl_dict)
                 raise TimeoutError(f'waited > {timeout:0.2f} sec for url {url_requested}')
         return status
     finally:
@@ -246,6 +261,24 @@ def wait_for(wait, by, selector):
     return wait.until(EC.presence_of_element_located((by, selector)))
 
 
+def wait_for_element_or_driver(web_element, by, ident, timeout=10):
+    # type: (WebDriverWait|WebDriver, str, str, int|float) -> WebElement
+    '''
+    Description:
+        The usual wait doesnt work on an individual web element, only the whole driver.
+        This allows for nesting waits if the DOM is updated in a recursive way.
+    Returns:
+        WebElement
+    '''
+    start = time.time()
+    while time.time() - start < timeout:
+        try:
+            return web_element.find_element(by, ident)
+        except NoSuchElementException:
+            time.sleep(0.5)
+    raise TimeoutError(f'timeout of {timeout:0.2f}sec waiting for {by}, {ident}')
+
+
 def save_page(driver, output_dirpath=DEFAULT_DOWNLOAD_DIRPATH):
     # type: (WebDriver, str) -> Tuple[str, str]
     '''
@@ -281,3 +314,16 @@ def save_page(driver, output_dirpath=DEFAULT_DOWNLOAD_DIRPATH):
         w.write(cookie_str)
 
     return html_filepath, cookies_filepath
+
+
+def load_cookies(driver, cookies):
+    # type: (WebDriver, List[dict]) -> None
+    '''
+    Description:
+    Returns:
+        Tuple[str, str]
+            html filepath
+            cookies filepath
+    '''
+    for cookie in cookies:
+        driver.add_cookie(cookie)
