@@ -134,6 +134,17 @@ class TestCase(UnitTest):
         ]
         self.assert_null_hypothesis(variables, controls)
 
+    def test_case_4(self):
+        example_org_html = abspath(constants.TESTS_COLLATERAL_DIRPATH, 'example.org.html')
+        pdf_filepath = abspath(self.tempdir, 'output.pdf')
+        variables = [
+            (lib.print_pdf, (example_org_html, ), dict(pdf_filepath=pdf_filepath)),
+        ]
+        controls = [
+            pdf_filepath,
+        ]
+        self.assert_null_hypothesis(variables, controls)
+
 
 if __name__ == '__main__':
     tc = TestCase()
@@ -144,5 +155,6 @@ if __name__ == '__main__':
         tc.test_case_1()
         tc.test_case_2()
         tc.test_case_3()
+        tc.test_case_4()
     finally:
         tc.tearDown()

@@ -10,6 +10,7 @@ core.lib.third.selenium is lots of wrappers around selenium that i've found or d
 core.lib are modules that contain code that is about (but does not modify) the library. somewhat referential to core.functor and core.types.
 
 Updates:
+    2026-02-23 - core.lib.third.selenium - added print_pdf
     2026-01-31 - core.lib.third.selenium - added wait_for_element_or_driver and load_cookies
     2026-01-19 - core.lib.third.selenium - initial commit
 '''
@@ -21,7 +22,6 @@ import sys
 import logging
 import json
 import time
-import datetime
 import threading
 from typing import Tuple, Optional, Union, Dict, List
 
@@ -36,7 +36,7 @@ from selenium.common.exceptions import NoSuchElementException
 from websocket import WebSocketApp
 
 # project imports
-from chriscarl.core.lib.stdlib.os import abspath, make_dirpath
+from chriscarl.core.lib.stdlib.os import abspath, dirpath, make_dirpath
 from chriscarl.core.lib.stdlib.urllib import get
 
 SCRIPT_RELPATH = 'chriscarl/core/lib/third/selenium.py'
@@ -51,6 +51,7 @@ LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.NullHandler())
 
 DEFAULT_DOWNLOAD_DIRPATH = abspath('~/downloads')
+DEFAULT_PDF_FILEPATH = abspath(DEFAULT_DOWNLOAD_DIRPATH, 'print.pdf')
 DEFAULT_CHROME_DEBUG_PORT = 7654
 
 
@@ -327,3 +328,36 @@ def load_cookies(driver, cookies):
     '''
     for cookie in cookies:
         driver.add_cookie(cookie)
+
+
+def print_pdf(url, pdf_filepath=DEFAULT_PDF_FILEPATH):
+    # type: (str, str) -> str
+    options = webdriver.ChromeOptions()  # EdgeOptions()
+    settings = {
+        "recentDestinations": [{
+            "id": "Save as PDF",
+            "origin": "local",
+            "account": "",
+        }],
+        # https://stackoverflow.com/a/60609650
+        # line 70 - https://github.com/chromium/chromium/blob/eadef3f685cd9e96e94fcb9645b6838b6d0907a8/chrome/browser/resources/print_preview/data/model.js
+        "isHeaderFooterEnabled": False,
+        "selectedDestinationId": "Save as PDF",
+        "version": 2
+    }
+    prefs = {
+        'printing.print_preview_sticky_settings.appState': json.dumps(settings),
+        # https://stackoverflow.com/a/49661930
+        'savefile.default_directory': os.path.abspath(dirpath(pdf_filepath)),
+    }
+
+    options.add_experimental_option('prefs', prefs)
+    options.add_argument('--kiosk-printing')
+    driver = webdriver.Chrome(options=options)  # Edge
+
+    driver.get(url)
+    driver.execute_script('window.print();')
+    time.sleep(1)  # NOTE: without this sleep, the print may not flush to disk
+    driver.quit()
+
+    return pdf_filepath
