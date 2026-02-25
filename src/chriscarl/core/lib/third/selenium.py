@@ -341,9 +341,16 @@ def print_pdf(url, dirpath=DEFAULT_DOWNLOAD_DIRPATH, timeout=10):
         }],
         # https://stackoverflow.com/a/60609650
         # line 70 - https://github.com/chromium/chromium/blob/eadef3f685cd9e96e94fcb9645b6838b6d0907a8/chrome/browser/resources/print_preview/data/model.js
+        # https://chromedevtools.github.io/devtools-protocol/tot/Page/#method-printToPDF
         "isHeaderFooterEnabled": False,
         "selectedDestinationId": "Save as PDF",
-        "version": 2
+        "version": 2,
+        'margin': {
+            'top': '0.2cm',
+            'right': '0.2cm',
+            'bottom': '0.2cm',
+            'left': '0.2cm'
+        },
     }
     prefs = {
         'printing.print_preview_sticky_settings.appState': json.dumps(settings),
@@ -360,7 +367,5 @@ def print_pdf(url, dirpath=DEFAULT_DOWNLOAD_DIRPATH, timeout=10):
     pdf_filepath = wait_for_new_file(dirpath, timeout=timeout)
     # time.sleep(1)  # NOTE: without this sleep, the print may not flush to disk
     driver.quit()
-
-    wait_for_new_file
 
     return pdf_filepath

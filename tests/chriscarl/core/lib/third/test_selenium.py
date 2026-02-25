@@ -136,12 +136,13 @@ class TestCase(UnitTest):
 
     def test_case_4(self):
         example_org_html = abspath(constants.TESTS_COLLATERAL_DIRPATH, 'example.org.html')
-        expected_filepath = abspath(self.tempdir, 'Example Domain.pdf')
         variables = [
             (lib.print_pdf, (example_org_html, ), dict(dirpath=self.tempdir)),
+            (lib.print_pdf, (example_org_html, ), dict(dirpath=self.tempdir)),  # does not overwrrite
         ]
         controls = [
-            expected_filepath,
+            abspath(self.tempdir, 'Example Domain.pdf'),
+            abspath(self.tempdir, 'Example Domain (1).pdf'),
         ]
         self.assert_null_hypothesis(variables, controls)
 
