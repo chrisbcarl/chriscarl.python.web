@@ -10,7 +10,7 @@ core.lib.third.selenium is lots of wrappers around selenium that i've found or d
 core.lib are modules that contain code that is about (but does not modify) the library. somewhat referential to core.functor and core.types.
 
 Updates:
-    2026-02-24 - core.lib.third.selenium - properly waiting for the printed pdf rather than something else
+    2026-02-24 - core.lib.third.selenium - properly waiting for the printed pdf rather than something else, added margins, better file detection
     2026-02-23 - core.lib.third.selenium - added print_pdf
     2026-01-31 - core.lib.third.selenium - added wait_for_element_or_driver and load_cookies
     2026-01-19 - core.lib.third.selenium - initial commit
@@ -37,7 +37,7 @@ from selenium.common.exceptions import NoSuchElementException
 from websocket import WebSocketApp
 
 # project imports
-from chriscarl.core.lib.stdlib.os import abspath, make_dirpath, wait_for_new_file
+from chriscarl.core.lib.stdlib.os import abspath, make_dirpath, wait_for_new_file, listdir_mtime
 from chriscarl.core.lib.stdlib.urllib import get
 
 SCRIPT_RELPATH = 'chriscarl/core/lib/third/selenium.py'
@@ -330,8 +330,9 @@ def load_cookies(driver, cookies):
         driver.add_cookie(cookie)
 
 
-def print_pdf(url, dirpath=DEFAULT_DOWNLOAD_DIRPATH, timeout=10):
-    # type: (str, str, int|float) -> str
+def print_pdf(url, dirpath=DEFAULT_DOWNLOAD_DIRPATH, timeout=10, margins=True):
+    # type: (str, str, int|float, bool) -> str
+    listdir_mtime_prev = listdir_mtime(dirpath)
     options = webdriver.ChromeOptions()  # EdgeOptions()
     settings = {
         "recentDestinations": [{
@@ -341,17 +342,21 @@ def print_pdf(url, dirpath=DEFAULT_DOWNLOAD_DIRPATH, timeout=10):
         }],
         # https://stackoverflow.com/a/60609650
         # line 70 - https://github.com/chromium/chromium/blob/eadef3f685cd9e96e94fcb9645b6838b6d0907a8/chrome/browser/resources/print_preview/data/model.js
-        # https://chromedevtools.github.io/devtools-protocol/tot/Page/#method-printToPDF
         "isHeaderFooterEnabled": False,
         "selectedDestinationId": "Save as PDF",
         "version": 2,
-        'margin': {
-            'top': '0.2cm',
-            'right': '0.2cm',
-            'bottom': '0.2cm',
-            'left': '0.2cm'
+        "marginsType": 3,  # CUSTOM
+        # https://github.com/chromium/chromium/blob/eadef3f685cd9e96e94fcb9645b6838b6d0907a8/chrome/browser/resources/print_preview/data/margins.js
+        "customMargins": {
+            "marginTop": 0.25,
+            "marginRight": 0.25,
+            "marginBottom": 0.25,
+            "marginLeft": 0.25,
         },
     }
+    if not margins:
+        settings['marginsType'] = 1  # NO_MARGINS
+        del settings['customMargins']
     prefs = {
         'printing.print_preview_sticky_settings.appState': json.dumps(settings),
         # https://stackoverflow.com/a/49661930
@@ -364,7 +369,7 @@ def print_pdf(url, dirpath=DEFAULT_DOWNLOAD_DIRPATH, timeout=10):
 
     driver.get(url)
     driver.execute_script('window.print();')
-    pdf_filepath = wait_for_new_file(dirpath, timeout=timeout)
+    pdf_filepath = wait_for_new_file(dirpath, timeout=timeout, listdir_mtime_prev=listdir_mtime_prev)
     # time.sleep(1)  # NOTE: without this sleep, the print may not flush to disk
     driver.quit()
 
