@@ -136,12 +136,12 @@ class TestCase(UnitTest):
 
     def test_case_4(self):
         example_org_html = abspath(constants.TESTS_COLLATERAL_DIRPATH, 'example.org.html')
-        pdf_filepath = abspath(self.tempdir, 'output.pdf')
+        expected_filepath = abspath(self.tempdir, 'Example Domain.pdf')
         variables = [
-            (lib.print_pdf, (example_org_html, ), dict(pdf_filepath=pdf_filepath)),
+            (lib.print_pdf, (example_org_html, ), dict(dirpath=self.tempdir)),
         ]
         controls = [
-            pdf_filepath,
+            expected_filepath,
         ]
         self.assert_null_hypothesis(variables, controls)
 

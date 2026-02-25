@@ -10,6 +10,7 @@ core.lib.third.selenium is lots of wrappers around selenium that i've found or d
 core.lib are modules that contain code that is about (but does not modify) the library. somewhat referential to core.functor and core.types.
 
 Updates:
+    2026-02-24 - core.lib.third.selenium - properly waiting for the printed pdf rather than something else
     2026-02-23 - core.lib.third.selenium - added print_pdf
     2026-01-31 - core.lib.third.selenium - added wait_for_element_or_driver and load_cookies
     2026-01-19 - core.lib.third.selenium - initial commit
@@ -36,7 +37,7 @@ from selenium.common.exceptions import NoSuchElementException
 from websocket import WebSocketApp
 
 # project imports
-from chriscarl.core.lib.stdlib.os import abspath, dirpath, make_dirpath
+from chriscarl.core.lib.stdlib.os import abspath, make_dirpath, wait_for_new_file
 from chriscarl.core.lib.stdlib.urllib import get
 
 SCRIPT_RELPATH = 'chriscarl/core/lib/third/selenium.py'
@@ -51,7 +52,6 @@ LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.NullHandler())
 
 DEFAULT_DOWNLOAD_DIRPATH = abspath('~/downloads')
-DEFAULT_PDF_FILEPATH = abspath(DEFAULT_DOWNLOAD_DIRPATH, 'print.pdf')
 DEFAULT_CHROME_DEBUG_PORT = 7654
 
 
@@ -330,8 +330,8 @@ def load_cookies(driver, cookies):
         driver.add_cookie(cookie)
 
 
-def print_pdf(url, pdf_filepath=DEFAULT_PDF_FILEPATH):
-    # type: (str, str) -> str
+def print_pdf(url, dirpath=DEFAULT_DOWNLOAD_DIRPATH, timeout=10):
+    # type: (str, str, int|float) -> str
     options = webdriver.ChromeOptions()  # EdgeOptions()
     settings = {
         "recentDestinations": [{
@@ -348,7 +348,7 @@ def print_pdf(url, pdf_filepath=DEFAULT_PDF_FILEPATH):
     prefs = {
         'printing.print_preview_sticky_settings.appState': json.dumps(settings),
         # https://stackoverflow.com/a/49661930
-        'savefile.default_directory': os.path.abspath(dirpath(pdf_filepath)),
+        'savefile.default_directory': os.path.abspath(dirpath),
     }
 
     options.add_experimental_option('prefs', prefs)
@@ -357,7 +357,10 @@ def print_pdf(url, pdf_filepath=DEFAULT_PDF_FILEPATH):
 
     driver.get(url)
     driver.execute_script('window.print();')
-    time.sleep(1)  # NOTE: without this sleep, the print may not flush to disk
+    pdf_filepath = wait_for_new_file(dirpath, timeout=timeout)
+    # time.sleep(1)  # NOTE: without this sleep, the print may not flush to disk
     driver.quit()
+
+    wait_for_new_file
 
     return pdf_filepath
