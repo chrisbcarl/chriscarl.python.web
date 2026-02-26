@@ -139,10 +139,12 @@ class TestCase(UnitTest):
         variables = [
             (lib.print_pdf, (example_org_html, ), dict(dirpath=self.tempdir)),
             (lib.print_pdf, (example_org_html, ), dict(dirpath=self.tempdir)),  # does not overwrrite
+            (lib.print_pdf, (example_org_html, ), dict(dirpath=self.tempdir, wait_for_by_value=('XPATH', '//a[@href]'))),
         ]
         controls = [
             abspath(self.tempdir, 'Example Domain.pdf'),
             abspath(self.tempdir, 'Example Domain (1).pdf'),
+            abspath(self.tempdir, 'Example Domain (2).pdf'),
         ]
         self.assert_null_hypothesis(variables, controls)
 
@@ -152,10 +154,10 @@ if __name__ == '__main__':
     tc.setUp()
 
     try:
-        tc.test_case_0()
-        tc.test_case_1()
-        tc.test_case_2()
-        tc.test_case_3()
+        # tc.test_case_0()
+        # tc.test_case_1()
+        # tc.test_case_2()
+        # tc.test_case_3()
         tc.test_case_4()
     finally:
         tc.tearDown()

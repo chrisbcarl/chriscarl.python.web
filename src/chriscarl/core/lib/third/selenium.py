@@ -10,6 +10,7 @@ core.lib.third.selenium is lots of wrappers around selenium that i've found or d
 core.lib are modules that contain code that is about (but does not modify) the library. somewhat referential to core.functor and core.types.
 
 Updates:
+    2026-02-26 - core.lib.third.selenium - added wait_for keys in printing
     2026-02-24 - core.lib.third.selenium - properly waiting for the printed pdf rather than something else, added margins, better file detection
     2026-02-23 - core.lib.third.selenium - added print_pdf
     2026-01-31 - core.lib.third.selenium - added wait_for_element_or_driver and load_cookies
@@ -25,6 +26,7 @@ import json
 import time
 import threading
 from typing import Tuple, Optional, Union, Dict, List
+import re
 
 # third party imports
 from selenium import webdriver
@@ -330,8 +332,13 @@ def load_cookies(driver, cookies):
         driver.add_cookie(cookie)
 
 
-def print_pdf(url, dirpath=DEFAULT_DOWNLOAD_DIRPATH, timeout=10, margins=True):
-    # type: (str, str, int|float, bool) -> str
+def print_pdf(url, dirpath=DEFAULT_DOWNLOAD_DIRPATH, timeout=10, margins=True, wait_for_by_value=None):
+    # type: (str, str, int|float, bool, Optional[Tuple[str, str]]) -> str
+    wait_for_by_value = wait_for_by_value or ('', '')
+    if wait_for_by_value and wait_for_by_value[0] and wait_for_by_value[1]:
+        if not hasattr(By, wait_for_by_value[0].upper()):
+            raise KeyError(f'wait_for_by[0] {wait_for_by_value[0].upper()!r} not a valid key of By')
+
     listdir_mtime_prev = listdir_mtime(dirpath)
     options = webdriver.ChromeOptions()  # EdgeOptions()
     settings = {
@@ -368,6 +375,11 @@ def print_pdf(url, dirpath=DEFAULT_DOWNLOAD_DIRPATH, timeout=10, margins=True):
     driver = webdriver.Chrome(options=options)  # Edge
 
     driver.get(url)
+
+    if wait_for_by_value and wait_for_by_value[0] and wait_for_by_value[1]:
+        wait = WebDriverWait(driver, timeout=timeout)
+        wait_for(wait, getattr(By, wait_for_by_value[0]), wait_for_by_value[1])
+
     driver.execute_script('window.print();')
     pdf_filepath = wait_for_new_file(dirpath, timeout=timeout, listdir_mtime_prev=listdir_mtime_prev)
     # time.sleep(1)  # NOTE: without this sleep, the print may not flush to disk
